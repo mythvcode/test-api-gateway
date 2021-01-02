@@ -70,7 +70,7 @@ def authenticate(func):
             return func(sess, *args, **kwargs)
         except Unauthorized as excp:
             log.info("Deny access  user %s exception %s", request_auth.username, excp)
-            return make_response(jsonify({"msg": "Acssess deny"}),401)
+            return make_response(jsonify({"msg": "Acssess deny"}), 401)
         except DiscoveryFailure as excp:
             log.error("Cannot connect to keystone err %s", excp)
             return make_response(jsonify({"msg": "No connection to keystone"}), 500)
@@ -87,7 +87,7 @@ def get_data(sess, get_req):
     :return: flask response json with requested data
     """
     # Поиск функции сделан так из-за R0912
-    lookup_func={
+    lookup_func = {
             "networks": get_networks,
             "images": get_images,
             "flavors": get_flavors,
@@ -121,7 +121,7 @@ def create_srv(sess):
         return make_response(jsonify({"msg": "Allowed only json"}), 400)
     try:
 
-        OK_RESPONSE["data"] =  create_server(sess, request.json)
+        OK_RESPONSE["data"] = create_server(sess, request.json)
 
     except BadRequest as excp:
         log.error("Bad request %s", excp)
@@ -164,10 +164,11 @@ def manage_serv(sess):
         log.warning("Conflict manage server %s", excp)
         return make_response(jsonify({"msg": f"Conflict '{excp}'"}), 409)
     except NotFound:
-        return make_response(jsonify({"msg": f"server with id '{request.json['id']}'" \
+        return make_response(jsonify({"msg": f"server with id '{request.json['id']}'"
                                              " not found"}), 404)
 
     return jsonify(OK_RESPONSE), 202
+
 
 if __name__ == "__main__":
     consoleHandler = logging.StreamHandler()

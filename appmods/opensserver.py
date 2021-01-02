@@ -19,7 +19,7 @@ def get_flavors(sess, flid=None):
     """
 
     result = []
-    nova = client.Client(version= '2', session=sess)
+    nova = client.Client(version='2', session=sess)
     if flid:
         tmp = [fl for fl in nova.flavors.list()
                if str(fl.id) == str(flid)]
@@ -58,7 +58,7 @@ def get_servers(sess, srvid=None):
     :return: list of dicts flavors
     """
     result = []
-    nova = client.Client(version= '2', session=sess)
+    nova = client.Client(version='2', session=sess)
     if srvid:
         tmp = [srv for srv in nova.servers.list()
                if str(srv.id) == str(srvid)]
@@ -67,15 +67,16 @@ def get_servers(sess, srvid=None):
     for srv in tmp:
         srv = srv.to_dict()
 
-        _del_unused_keys(srv["flavor"] ,srv["image"])
+        _del_unused_keys(srv["flavor"], srv["image"])
 
         result.append({"id": srv["id"],
-                      "name": srv["name"],
-                      "status": srv["status"],
-                      "image": srv["image"],
-                      "flavor": srv["flavor"],
-                      "addresses": srv["addresses"]})
+                       "name": srv["name"],
+                       "status": srv["status"],
+                       "image": srv["image"],
+                       "flavor": srv["flavor"],
+                       "addresses": srv["addresses"]})
     return result
+
 
 def create_server(sess, data):
     """
@@ -89,10 +90,10 @@ def create_server(sess, data):
     no_in_data = [req_d for req_d in reuired_data if req_d not in data]
     if no_in_data:
         raise BadRequest(f"Not all required data is given '{no_in_data}'")
-    if not data["network_ids"] or not isinstance(data["network_ids"],list):
+    if not data["network_ids"] or not isinstance(data["network_ids"], list):
         raise BadRequest("Network_ids must be not empty list")
 
-    nova = client.Client(version= '2', session=sess)
+    nova = client.Client(version='2', session=sess)
     servermanager = nova.servers
     networks = [{"net-id": net_id} for net_id in data["network_ids"]]
     createdserver = servermanager.create(data["server_name"],
@@ -100,9 +101,10 @@ def create_server(sess, data):
                                          image=data["image_id"],
                                          nics=networks)
     if createdserver:
-        return {"id":createdserver.to_dict()["id"]}
+        return {"id": createdserver.to_dict()["id"]}
 
     return dict()
+
 
 def manage_server(sess, data):
     """
@@ -117,7 +119,7 @@ def manage_server(sess, data):
     no_in_data = [req_d for req_d in reuired_data if req_d not in data]
     if no_in_data:
         raise BadRequest(f"Not all required data is given '{no_in_data}'")
-    nova = client.Client(version= '2', session=sess)
+    nova = client.Client(version='2', session=sess)
     servermanager = nova.servers
     server = servermanager.get(data["id"])
     functios = {
