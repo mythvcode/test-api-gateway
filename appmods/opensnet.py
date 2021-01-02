@@ -1,7 +1,7 @@
 #!env/bin/python
 # -*- coding: utf-8 -*-
 """
-Модуль для управления сетями neutron
+Neutron network management module
 """
 from neutronclient.v2_0 import client
 
@@ -10,10 +10,11 @@ __all__ = ["get_networks"]
 
 def _get_subnets(idlist, neutron):
     """
-    Функция для формирования списка доступных подсетей
-    :param idlist: list список подсетей для поиска
+    Function to form a list of available subnets
+
+    :param idlist:  list of subnets to search
     :param neutron: neutron client
-    :return: list список словарей описывающих доступные подсети
+    :return: list list of dicts describing available subnets
     """
     result = []
     for netid in idlist:
@@ -26,12 +27,11 @@ def _get_subnets(idlist, neutron):
 
 def get_networks(sess, netid=None):
     """
-    Функция формирует список доступных сетей neutron
-    формирует список словарей описывающих доступые сети
-    Если передается параметр netid, то происходит поиск сети по id
+    The function generates a list of available neutron networks
+    If the netid parameter is passed, then the network is searched by id
     :param sess: Keystone session
-    :param netid: str id искомой сети
-    :return: list список словарей описывающих сети
+    :param netid: str network id
+    :return: list  of dicts describing networks
     """
     result = []
     neutron = client.Client(session=sess)

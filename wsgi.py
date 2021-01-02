@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-api wsgi gateway к openstack
+api wsgi gateway to openstack
 
 """
 import logging
@@ -11,14 +11,20 @@ from flask import Flask
 from flask import jsonify
 from flask import make_response
 from flask import request
+from werkzeug.exceptions import BadRequest as WZBadRequest
 
 from keystoneauth1 import loading
 from keystoneauth1 import session
 from keystoneauth1.exceptions.http import Unauthorized
 from keystoneauth1.exceptions.discovery import DiscoveryFailure
+from novaclient.exceptions import BadRequest, NotFound, Conflict
 
 from appmods.opensnet import get_networks
 from appmods.opensimage import get_images
+from appmods.opensserver import get_flavors
+from appmods.opensserver import get_servers
+from appmods.opensserver import create_server
+from appmods.opensserver import manage_server
 
 logging.basicConfig(filename="/var/log/api-gateway/api.log", level=logging.INFO)
 app = Flask(__name__)
@@ -35,8 +41,8 @@ OK_RESPONSE = {"msg": "OK"}
 @app.before_request
 def clear_response():
     """
-    Функция удаляет даныые по ключу data из OK_RESPONSE,
-    созданные при предыдущих запросах.
+    The function removes the "data" key from OK_RESPONSE dict,
+    what was created on previous requests.
     """
     if "data" in OK_RESPONSE:
         OK_RESPONSE.pop("data")
@@ -44,10 +50,10 @@ def clear_response():
 
 def authenticate(func):
     """
-    Декоратор для аутентификации вызова метода api
-    перехватывает  исключение Unauthorized из вызываемой функции
-    :param func: декорируемая функция
-    :return decorated: декорированная функция
+    Decorator to authenticate api method call.
+    catches the Unauthorized,DiscoveryFailure exceptions from the called function.
+    :param func: decorating function
+    :return decorated: decorated function
     """
     @wraps(func)
     def decorated(*args, **kwargs):
@@ -71,41 +77,99 @@ def authenticate(func):
     return decorated
 
 
-@app.route("/networks", methods=["GET"])
+@app.route("/<get_req>", methods=["GET"])
 @authenticate
-def networks(sess):
+def get_data(sess, get_req):
     """
-    Функция описка доступных сетей neutron
-    Если в get запросе пережается переменная id то поиск сети осуществляется
-    по id сети
+    Function for finding the requested data,
+    if id is passed to search databy id
     :param sess: keystone session
-    :return: flask response json json со списком доступных сетей
+    :return: flask response json with requested data
     """
+    # Поиск функции сделан так из-за R0912
+    lookup_func={
+            "networks": get_networks,
+            "images": get_images,
+            "flavors": get_flavors,
+            "servers": get_servers
+            }
+    try:
+        func = lookup_func[get_req]
+    except KeyError:
+        log.info("Route /%s not faund", get_req)
+        return make_response(jsonify({"msg": "Not found"}), 401)
+
     if request.args and "id" in request.args:
-        OK_RESPONSE["data"] = get_networks(sess, request.args["id"])
+        OK_RESPONSE["data"] = func(sess, request.args["id"])
     else:
-        OK_RESPONSE["data"]=get_networks(sess)
+        OK_RESPONSE["data"] = func(sess)
     return jsonify(OK_RESPONSE)
 
 
-@app.route("/images", methods=["GET"])
+@app.route("/create_server", methods=["POST"])
 @authenticate
-def images(sess):
+def create_srv(sess):
     """
-    Функция описка доступных образов
-    Если в get запросе пережается переменная id,
-    то поиск образа осуществляетсяпо id
+    Function for create server
+    For creation used request.json data
     :param sess: keystone session
-    :return: flask response json json со1 списком доступных образов
+    :return: flask response json with id created server
     """
-    if request.args and "id" in request.args:
-        OK_RESPONSE["data"] = get_images(sess, request.args["id"])
-    else:
-        OK_RESPONSE["data"]=get_images(sess)
-    return jsonify(OK_RESPONSE)
+    if not request.data:
+        return make_response(jsonify({"msg": "Empty request data"}), 400)
+    if not request.is_json:
+        return make_response(jsonify({"msg": "Allowed only json"}), 400)
+    try:
+
+        OK_RESPONSE["data"] =  create_server(sess, request.json)
+
+    except BadRequest as excp:
+        log.error("Bad request %s", excp)
+        return make_response(jsonify({"msg": f"Error create server {excp}"}), 400)
+
+    except WZBadRequest:
+        log.error("Error no valide request json")
+        return make_response(jsonify({"msg": "No valid json"}), 400)
+
+    return jsonify(OK_RESPONSE), 201
 
 
-if __name__=="__main__":
+@app.route("/manage_server", methods=["POST"])
+@authenticate
+def manage_serv(sess):
+    """
+    Function for manage servers
+    If sucsess action return OK_RESPONSE
+    :param sess: keystone session
+    :return: flask response json with  with status of request
+    """
+    errresp = None
+    if not request.data:
+        errresp = make_response(jsonify({"msg": "Empty request data"}), 400)
+    if not request.is_json:
+        errresp = make_response(jsonify({"msg": "Allowed only json"}), 400)
+    # Сделано из-за R0911
+    if errresp:
+        return errresp
+
+    try:
+        manage_server(sess, request.json)
+    except WZBadRequest:
+        log.error("Error no valide request json")
+        return make_response(jsonify({"msg": "No valid json"}), 400)
+    except BadRequest as excp:
+        log.error("Bad request %s", excp)
+        return make_response(jsonify({"msg": f"Error '{excp}'"}), 400)
+    except Conflict as excp:
+        log.warning("Conflict manage server %s", excp)
+        return make_response(jsonify({"msg": f"Conflict '{excp}'"}), 409)
+    except NotFound:
+        return make_response(jsonify({"msg": f"server with id '{request.json['id']}'" \
+                                             " not found"}), 404)
+
+    return jsonify(OK_RESPONSE), 202
+
+if __name__ == "__main__":
     consoleHandler = logging.StreamHandler()
     log.addHandler(consoleHandler)
     app.logger.handlers = log.handlers

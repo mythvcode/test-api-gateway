@@ -1,21 +1,20 @@
 #!env/bin/python
 # -*- coding: utf-8 -*-
 """
-Модуль для управления images glance
-В далнейшем может быть функционал модет быть расширен
-методами создания удаления конфигурации образов
+Module for managing images glance
 """
 from glanceclient import Client
 
 __all__ = ["get_images"]
 
+
 def get_images(sess, imageid=None):
     """
-    Функция формирует список словарей описывающих доступые образы.
-    Если передается параметр imageid, то происходит поиск образа по id
+    The function generates a list of dicts describing the available images.
+    If the imageid parameter is passed, then the image is searched by id
     :param sess: Keystone session
-    :param netid: str id искомого образа
-    :return: list список словарей описывающих сети
+    :param imageid: str id searched image
+    :return: list of dicts describes images
     """
 
     result = []
@@ -26,9 +25,9 @@ def get_images(sess, imageid=None):
         glanceimages = glance.images.list()
     for image in glanceimages:
         result.append({"id": image["id"],
-            'status': image["status"],
-            'disk_format': image["disk_format"],
-            'container_format':image["container_format"]
-            })
+                       'status': image["status"],
+                       'disk_format': image["disk_format"],
+                       'container_format': image["container_format"]
+                       })
 
     return result
