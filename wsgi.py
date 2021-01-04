@@ -86,7 +86,7 @@ def authenticate(func):
             return make_response(jsonify({"msg": "No connection to keystone"}), 500)
         except ConnectFailure as excp:
             log.error("Cannot connect to endpoint %s", excp)
-            return make_response(jsonify({"msg": "Cannot connect to endpoint {excp}"}), 500)
+            return make_response(jsonify({"msg": f"Cannot connect to endpoint {excp}"}), 500)
     return decorated
 
 
@@ -110,12 +110,15 @@ def get_data(sess, get_req):
         func = lookup_func[get_req]
     except KeyError:
         log.info("Route /%s not faund", get_req)
-        return make_response(jsonify({"msg": "Not found"}), 401)
+        return make_response(jsonify({"msg": "URL Not found"}), 404)
 
     if request.args and "id" in request.args:
         OK_RESPONSE["data"] = func(sess, request.args["id"])
     else:
         OK_RESPONSE["data"] = func(sess)
+
+    if not OK_RESPONSE["data"]:
+        return make_response(jsonify({"msg": "Data not found"}), 404)
     return jsonify(OK_RESPONSE)
 
 
