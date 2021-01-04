@@ -1,0 +1,7 @@
+api:
+  image: testapigateway1/api
+  ports:
+   - "8035:8035"
+  environment:
+   - KEYSTONEHOST=192.168.0.2
+

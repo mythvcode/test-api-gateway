@@ -6,6 +6,7 @@ api wsgi gateway to openstack
 
 """
 import logging
+import os
 from functools import wraps
 from flask import Flask
 from flask import jsonify
@@ -17,6 +18,7 @@ from keystoneauth1 import loading
 from keystoneauth1 import session
 from keystoneauth1.exceptions.http import Unauthorized
 from keystoneauth1.exceptions.discovery import DiscoveryFailure
+from keystoneauth1.exceptions.connection import  ConnectFailure
 from novaclient.exceptions import BadRequest, NotFound, Conflict
 
 from appmods.opensnet import get_networks
@@ -34,6 +36,14 @@ app.config['JSON_AS_ASCII'] = False
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = True
 
 log = logging.getLogger("api-gateway")
+if os.environ.get("INDOCKER"):
+    consoleHandler = logging.StreamHandler()
+    log.addHandler(consoleHandler)
+
+KEYSTONE_HOST = os.environ.get("KEYSTONEHOST")
+if not KEYSTONE_HOST:
+    KEYSTONE_HOST = "localhost"
+
 app.logger.handlers = log.handlers
 OK_RESPONSE = {"msg": "OK"}
 
@@ -51,7 +61,7 @@ def clear_response():
 def authenticate(func):
     """
     Decorator to authenticate api method call.
-    catches the Unauthorized,DiscoveryFailure exceptions from the called function.
+    catches the Unauthorized, DiscoveryFailure, ConnectFailure  exceptions from the called function.
     :param func: decorating function
     :return decorated: decorated function
     """
@@ -61,7 +71,7 @@ def authenticate(func):
         if not request_auth:
             return make_response(jsonify({"msg": "No auth credentials"}), 401)
         loader = loading.get_plugin_loader('password')
-        auth = loader.load_from_options(auth_url="http://localhost/identity",
+        auth = loader.load_from_options(auth_url=f"http://{KEYSTONE_HOST}/identity",
                                         username=request_auth.username,
                                         password=request_auth.password,
                                         user_domain_id="default")
@@ -74,6 +84,9 @@ def authenticate(func):
         except DiscoveryFailure as excp:
             log.error("Cannot connect to keystone err %s", excp)
             return make_response(jsonify({"msg": "No connection to keystone"}), 500)
+        except ConnectFailure as excp:
+            log.error("Cannot connect to endpoint %s", excp)
+            return make_response(jsonify({"msg": "Cannot connect to endpoint {excp}"}), 500)
     return decorated
 
 
@@ -82,8 +95,8 @@ def authenticate(func):
 def get_data(sess, get_req):
     """
     Function for finding the requested data,
-    if id is passed to search databy id
-    :param sess: keystone session
+    if the variable id is passed, then the data is searched
+    by the id parameter
     :return: flask response json with requested data
     """
     # Поиск функции сделан так из-за R0912
@@ -143,14 +156,8 @@ def manage_serv(sess):
     :param sess: keystone session
     :return: flask response json with  with status of request
     """
-    errresp = None
     if not request.data:
-        errresp = make_response(jsonify({"msg": "Empty request data"}), 400)
-    if not request.is_json:
-        errresp = make_response(jsonify({"msg": "Allowed only json"}), 400)
-    # Сделано из-за R0911
-    if errresp:
-        return errresp
+        return  make_response(jsonify({"msg": "Empty request data"}), 400)
 
     try:
         manage_server(sess, request.json)

@@ -109,7 +109,7 @@ def create_server(sess, data):
 def manage_server(sess, data):
     """
     The function for manage servers
-    support stop start delete
+    support stop, start, delete
     raises NotFound, BadRequest, Conflict
     :param sess: Keystone session
     :param data: dict descibed server and command
