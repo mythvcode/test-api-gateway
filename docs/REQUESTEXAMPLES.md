@@ -12,7 +12,7 @@
   
 }
 ```
-Во всех запросах на получение flavor iamge server network можно указывать id по которому искать объект.  
+Во всех запросах на получение (flavor, iamge, server, network) можно указывать id по которому искать объект.  
 
 ## Запрос на получение списка сетей
 ```
@@ -226,7 +226,7 @@ Content-Length: 18
 
 ```
 
-## Удалить сервер
+## Удаление  сервера
 ```
 curl -iu wsgi:***  -H "Content-Type: application/json" \
  -X POST -d '{"id": "5c210e96-7d5f-45cd-81e7-52c81087e4f5", "action": "delete"}'\

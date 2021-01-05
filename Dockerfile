@@ -8,10 +8,10 @@ ENV KEYSTONEHOST=127.0.0.1
 EXPOSE 8035/tcp
 
 COPY requirements.txt ./
+RUN pip3 install -r requirements.txt
+
 COPY wsgi.py ./
 ADD appmods ./appmods
-
-RUN pip3 install -r requirements.txt
 RUN mkdir -p /var/log/api-gateway
 
 RUN groupadd --gid 1000 api \
