@@ -3,6 +3,6 @@ api:
   ports:
    - "8035:8035"
   environment:
-   - KEYSTONEHOST=192.168.0.2
+   - KEYSTONE_URL=http://192.168.0.2/identity
    - GUNICORN_CMD_ARGS="--bind=0.0.0.0:8035" "--workers=3"
 

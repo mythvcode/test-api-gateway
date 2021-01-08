@@ -185,7 +185,7 @@ Content-Length: 85
 
 {
   "data": {
-    "id": "5c210e96-7d5f-45cd-81e7-52c81087e4f5"
+    "srvid": "5c210e96-7d5f-45cd-81e7-52c81087e4f5"
   },
   "msg": "OK"
 }
@@ -196,7 +196,7 @@ Content-Length: 85
 ```
 # Выключить
  curl -iu wsgi:***  -H "Content-Type: application/json" \
- -X POST -d '{"id": "5c210e96-7d5f-45cd-81e7-52c81087e4f5", "action": "stop"}'\
+ -X POST -d '{"srvid": "5c210e96-7d5f-45cd-81e7-52c81087e4f5", "action": "stop"}'\
   http:/77.223.100.94:8035/manage_server
 HTTP/1.1 202 ACCEPTED
 Server: gunicorn/20.0.4
@@ -211,7 +211,7 @@ Content-Length: 18
 
 # Включить
 curl -iu wsgi:***  -H "Content-Type: application/json" \
--X POST -d '{"id": "5c210e96-7d5f-45cd-81e7-52c81087e4f5", "action": "start"}'\
+-X POST -d '{"srvid": "5c210e96-7d5f-45cd-81e7-52c81087e4f5", "action": "start"}'\
  http:/77.223.100.94:8035/manage_server
 HTTP/1.1 202 ACCEPTED
 Server: gunicorn/20.0.4
@@ -229,7 +229,7 @@ Content-Length: 18
 ## Удаление  сервера
 ```
 curl -iu wsgi:***  -H "Content-Type: application/json" \
- -X POST -d '{"id": "5c210e96-7d5f-45cd-81e7-52c81087e4f5", "action": "delete"}'\
+ -X POST -d '{"srvid": "5c210e96-7d5f-45cd-81e7-52c81087e4f5", "action": "delete"}'\
   http:/77.223.100.94:8035/manage_server
 HTTP/1.1 202 ACCEPTED
 Server: gunicorn/20.0.4

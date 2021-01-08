@@ -4,7 +4,7 @@ WORKDIR /opt/api-gateway
 
 ENV GUNICORN_CMD_ARGS="--bind=0.0.0.0:8035 --workers=3"
 ENV INDOCKER=true
-ENV KEYSTONEHOST=127.0.0.1
+ENV KEYSTONE_URL="http://localhost/identity"
 EXPOSE 8035/tcp
 
 COPY requirements.txt ./
