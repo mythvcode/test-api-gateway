@@ -1,42 +1,57 @@
-# Задание
+# Тестовое задание API gateway  к openstack
+Api написан на python3 в качестве WSGI HTTP сервера используется gunicorn.  
+Потдерживает опреации:  
+  1. Получить список (image,network,flavor,server).  
+  2. Создать удалить остановить запустить сервер.  
+  
+Примеры запросов и ответов в docs.  
+На тестовом сервере приложение расположено в директории /opt/test-api-gateway. 
+Пароль от root и от панели управления не менял
 
-Создать API gateway для получения информации из облака OpenStack (Devstack).
+**Пароли к wsgi и horizon находятся в /root/PASSWORDS**  
+  
+Создана virtualenv с установленными в нее зависимостиями.  
+Для запуска приложения можно использовать скрипт <app_dir>/scripts/api-gateway.sh  
+Пример  
+```
+./scripts/api-gateway.sh start
+Starting api-gateway
+Done
+ps -axu | grep gunicorn
+root     1548364  0.0  0.0  27276 19680 ?        S    17:26   0:00 /opt/test-api-gateway/env/bin/python /opt/test-api-gateway/env/bin/gunicorn --daemon --bind=0.0.0.0:8035 --pid=/var/run/api-gateway.pid --workers=3 --log-file=/var/log/api-gateway/api-gateway.log --access-logfile /var/log/api-gateway/access.log wsgi:app
+root     1548366  0.9  0.1  50428 39956 ?        S    17:26   0:00 /opt/test-api-gateway/env/bin/python /opt/test-api-gateway/env/bin/gunicorn --daemon --bind=0.0.0.0:8035 --pid=/var/run/api-gateway.pid --workers=3 --log-file=/var/log/api-gateway/api-gateway.log --access-logfile /var/log/api-gateway/access.log wsgi:app
+root     1548367  0.9  0.1  50428 39968 ?        S    17:26   0:00 /opt/test-api-gateway/env/bin/python /opt/test-api-gateway/env/bin/gunicorn --daemon --bind=0.0.0.0:8035 --pid=/var/run/api-gateway.pid --workers=3 --log-file=/var/log/api-gateway/api-gateway.log --access-logfile /var/log/api-gateway/access.log wsgi:app
+root     1548368  0.9  0.1  50428 39960 ?        S    17:26   0:00 /opt/test-api-gateway/env/bin/python /opt/test-api-gateway/env/bin/gunicorn --daemon --bind=0.0.0.0:8035 --pid=/var/run/api-gateway.pid --workers=3 --log-file=/var/log/api-gateway/api-gateway.log --access-logfile /var/log/api-gateway/access.log wsgi:app
 
-## Техническое задание
-**Обязательные пункты**
-1. Развернуть [devstack](https://docs.openstack.org/devstack/latest/) в виртуальной машине;
-2. Cоздать внутри devstack несколько виртуальных машин через веб-интерфейс Horizon или с помощью консольного клиента;
-3. Написать сервис API gateway который будет предоставлять интерфейс для:
-   1. отображения объектов необходимых для запуска виртуальной машины: а именно: flavors, images, networks;
-   2. запуска виртуальной машины с использованием данных из предыдущего пункта;
-   3. отображения списка виртуальных машин уже созданных в облаке (имя, статус, ip адреса);
-   4. задеплоить и запустить сервис на виртуальной машине.
+```
+Либо можно запусить docker контейнер.  
+Image собран и опубликован [https://hub.docker.com/r/testapigateway1/api](https://hub.docker.com/r/testapigateway1/api).  
+Приложение слушает tcp порт 8035, пожно переопределить в api-gateway.sh.  
+В контейнере параметры gunicorn можно переопрелить с помощью переменной окружения GUNICORN_CMD_ARGS.  
 
-**Опциональные пункты**
-Будут плюсом, но не обязательны к выполнению. Могут быть выполнены в любом порядке и любое количество:
-1. Написать CLI клиент к разработанному сервису для удобного использования системы;
-2. Упаковать сервис в docker image и подготовить к деплою (запушить в DockerHub, добавить доккументацию как передать конфиг и т.д.);
-3. Добавить слой аутентификации в сервис, для проверки источника запросов.
+По умолчанию приложение пытается пройти аутентификаци на localhost.  
+Переопределить данное поведение можно изменив переменную окружения KEYSTONEHOST.  
+Так же в директории с проектом создан docker-compose.yaml для более удобного запуска  
 
-## Требования к выполнению задания
-1. сервис должен быть написан на Python или GO;
-2. сервис должен представлять из себя демон, а не one-run скрипт;
-3. сервис должен использовать keystone аутентификацию;
-4. сервис должен использовать бибилиотеки из экосистемы OpenStack если они есть для конкретной задачи;
-5. сервис должен быть подготовленным к сборке, то есть иметь requirements.txt / setup.py (в случае с python) или vendor (в случае с GO), а также инструкцию по сборке и запуску;
-6. сервис должен сопровождаться минимальной документацией по использованию (примеры curl, примеры ответов и т.д.);
-7. ревью кода - это часть задания (см. критерии оценки).
+Примеры запуска контейнера  
+```
+docker run -e KEYSTONEHOST=192.168.0.2 -d  -p 8035:8035 testapigateway1/api
+# В директории с проeктом
+docker-compose up -d
+```
 
-## Как начать выполнять и предоставить результат
-1. сделать fork этого репозитория и в нем вести разработку;
-2. держать все в одном репозитории (код, документацию, Dockerfile и т.д.);
-3. создать pull request для ревью выполненного задания;
-4. добавить @velp в ревьюеры;
-5. в документации указать IP адрес машины с запущенным сервисов и DevStack, а также порт.
+У приложения должен быть доступ к сконфигурированным в openstack endpoints сервисов (neutron,nova,glance,keystone)  
 
-## Критерии оценки
-1. соответсвие техническому заданию и рабочее решение;
-2. общая структура проекта и оформление кода;
-3. используемые библиотеки;
-4. документация;
-5. флоу разработки: fork, серия-коммитов, PR, ревью кода.
+```
+openstack endpoint list
++----------------------------------+-----------+--------------+----------------+---------+-----------+----------------------------------------------+
+| ID                               | Region    | Service Name | Service Type   | Enabled | Interface | URL                                          |
++----------------------------------+-----------+--------------+----------------+---------+-----------+----------------------------------------------+
+| 04413fa8d10f41759c2a286f6eb2202a | RegionOne | glance       | image          | True    | public    | http://192.168.0.2/image                     |
+| 1f40ab5ba7754a0e8c2442b655150572 | RegionOne | keystone     | identity       | True    | admin     | http://192.168.0.2/identity                  |
+| cda84afd49214363b6fac415a2418878 | RegionOne | nova         | compute        | True    | public    | http://192.168.0.2/compute/v2.1              |
+| e24dea6758a746f9940c834b049e863c | RegionOne | neutron      | network        | True    | public    | http://192.168.0.2:9696/                     |
+| ffb26af3ef094c5dbd297985f6df049d | RegionOne | keystone     | identity       | True    | public    | http://192.168.0.2/identity                  |
++----------------------------------+-----------+--------------+----------------+---------+-----------+----------------------------------------------+
+```
+

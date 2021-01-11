@@ -1,0 +1,6 @@
+flask==1.1.2
+python-glanceclient==3.2.2
+python-keystoneclient==4.2.0
+python-neutronclient==7.2.1
+python-novaclient==17.2.1
+gunicorn==20.0.4
